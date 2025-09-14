@@ -3,6 +3,18 @@ revision = 3
 requires-python = ">=3.9"
 
 [[package]]
+name = "future"
+version = "0.18.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/0b/38b06fd9b92dc2b68d58b75f900e97884c45bedd2ff83203d933cf5851c9/future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d", size = 829220, upload-time = "2019-10-31T00:58:13.043Z" }
+
+[[package]]
 name = "hw1"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "future" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "future", specifier = "==0.18.2" }]

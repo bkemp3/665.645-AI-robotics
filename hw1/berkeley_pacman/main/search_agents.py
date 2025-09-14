@@ -346,20 +346,29 @@ class CornersProblem(search.SearchProblem):
         #     self.debugging = True
         #     self.total_iterations = 0
         "*** YOUR CODE HERE ***"
+        # Initialize corners as unexplored
+        corners_explored = (False, False, False, False)
+        # Check if the corneres have been explored
+        for i in range(4):
+            if self.starting_position == self.corners[i]:
+                corners_explored[i] = True
+        # Initialize a relevant start state
+        self.start_state = (self.starting_position, corners_explored)
+
 
     def get_start_state(self):
         """
         Returns the start state (in your state space, not the full Pacman state space)
         """
         "*** YOUR CODE HERE ***"
-        util.raise_not_defined()
+        return self.start_state
 
     def is_goal_state(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raise_not_defined()
+        return all(state[1])
 
     def get_successors(self, state):
         
@@ -400,7 +409,30 @@ class CornersProblem(search.SearchProblem):
         #             next_state = (nextx, nexty)
         #             cost = self.cost_fn(next_state)
         #             successors.append(tools.Transition(next_state, action, cost))
-        
+
+        successors = []
+        for action in [
+            Directions.NORTH,
+            Directions.SOUTH,
+            Directions.EAST,
+            Directions.WEST,
+        ]:
+            # Extract position and corners_explored from state
+            x, y = state[0]
+            corners_explored = state[1]
+
+            dx, dy = Actions.direction_to_vector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                next_state = (nextx, nexty)
+                next_corners_explored = list(corners_explored)
+                # Check if we are at a corner
+                for i in range(4):
+                    if next_state == self.corners[i]:
+                        next_corners_explored[i] = True
+                s = ((next_state, tuple(next_corners_explored)), action, 1)
+                successors.append(s)
+
         self._expanded += 1  # NOTE: STUFF WILL BREAK IF YOU CHANGE THIS
         return successors
 
@@ -437,6 +469,49 @@ def corners_heuristic(state, problem):
     walls = problem.walls  # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
+    heuristic_val = 0
+    curr_position, corners_explored = state
+    remaining = not all(state[1])
+    # Confirm that unexplored corners still exist
+    if not remaining: 
+        return heuristic_val
+    # Get the manhattan distance between current position and the nearest corner
+    nearest_dist = 999999. # Uses same max cost used by get_cost_of_actions
+    unexpl_remaining = 0
+    for i in range(4): 
+        if not corners_explored[i]: 
+            unexpl_remaining += 1
+            curr_dist = abs(problem.corners[i][0]-curr_position[0])+abs(problem.corners[i][1]-curr_position[1])
+            if curr_dist < nearest_dist:
+                nearest_dist = curr_dist
+    heuristic_val = nearest_dist
+    # If there is more than one unexplored corner remaining, 
+    # Find the furthest unexplored corner from the nearest unexplored corner
+    # Then add this distance to the heuristic_val
+    furthest_dist = 0
+    if unexpl_remaining > 1:
+        for i in range(4):
+            for j in range(4):
+                if (not corners_explored[i]) and  (not corners_explored[j]) and (i != j):  
+                    # Get the distance between these corners
+                    curr_dist = abs(problem.corners[i][0]-problem.corners[j][0])+abs(problem.corners[i][1]-problem.corners[j][1])  
+                    # If further than other corners found so far, 
+                    if curr_dist > furthest_dist:
+                        furthest_dist = curr_dist
+    heuristic_val += furthest_dist
+
+    return heuristic_val
+
+
+        
+
+
+    for i in range(len(remaining)):
+        for j in range(i+1, len(remaining)):
+            ax,ay = remaining[i]; bx,by = remaining[j]
+            far = max(far, abs(ax-bx)+abs(ay-by))
+    return near + far
+
     return 0  # Default to trivial solution
 
 
@@ -551,8 +626,31 @@ def food_heuristic(state, problem):
     problem.heuristic_info['wall_count']
     """
     position, food_grid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foods = food_grid.as_list()
+    # Return early if no food
+    if not foods:
+        return 0
+
+    # nearest distance from Pacman to any food
+    nearest_dist = float('inf')
+    for f in foods:
+        curr_dist = manhattan(position, f)
+        if curr_dist < nearest_dist:
+            nearest_dist = curr_dist
+
+    # farthest pairwise distance among remaining foods
+    far_dist = 0
+    for i in range(len(foods)):
+        for j in range(len(foods)):
+            if i != j:
+                curr_dist = manhattan(foods[i], foods[j])
+                if curr_dist > far_dist:
+                    far_dist = curr_dist
+
+    return nearest_dist + far_dist
+
+def manhattan(pos1, pos2):
+    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])    
 
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -590,7 +688,11 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(game_state)
 
         "*** YOUR CODE HERE ***"
-        util.raise_not_defined()
+        # USING THE HINT
+        # Pose as an AnyFoodSearchProblem
+        problem = AnyFoodSearchProblem(game_state)
+        # Solve with appropriate search function
+        return search.astar(problem) # Default is the null_heuristic making this equal to UCS
 
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -627,7 +729,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x, y = state
 
         "*** YOUR CODE HERE ***"
-        util.raise_not_defined()
+        return self.food[x][y]
 
 
 def maze_distance(point1, point2, game_state):

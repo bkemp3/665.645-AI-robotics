@@ -95,6 +95,7 @@ def your_heuristic(state, problem=None):
     # 
     if isinstance(problem, SearchProblem):
         # data
+        print(state)
         pacman_x, pacman_y = state
         goal_x, goal_y     = problem.goal
         
@@ -115,7 +116,9 @@ def your_heuristic(state, problem=None):
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
 
-def a_star_search(problem, heuristic=your_heuristic):
+
+# PSEUDOCODE COMMENTS ADAPTED FROM NORVIG RUSSELL FIGURE 3.14 FOR UNIFORM SEARCHS
+def a_star_search(problem, heuristic=null_heuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
     
@@ -127,7 +130,53 @@ def a_star_search(problem, heuristic=your_heuristic):
     #     priority = depth + heuristic(state, problem)
     #
     
-    util.raise_not_defined()
+    # function A-STAR-SEARCH(problem, h) returns a solution, or failure
+    # node ← a node with STATE = problem.INITIAL-STATE, PATH-COST = 0
+    start_state = problem.get_start_state()
+    start_node = (start_state, [], 0)  # (STATE, PATH (actions), PATH-COST)
+
+    # frontier ← a priority queue ordered by (PATH-COST + h(STATE)), with node as the only element
+    # NOTE: THIS IS THE DIFF BETWEEN A* and UNIFORM
+    frontier = util.PriorityQueue()
+    frontier.push(start_node, 0 + heuristic(start_state, problem))
+
+    # explored ← an empty set
+    explored = set()
+
+    # loop do
+    while not frontier.is_empty():
+        # if EMPTY?(frontier) then return failure   [handled by while condition + final return]
+        # node ← POP(frontier)  /* chooses the lowest (PATH-COST + h(STATE)) node in frontier */
+        state, path, g_cost = frontier.pop()
+
+        # if problem.GOAL-TEST(node.STATE) then return SOLUTION(node)
+        if problem.is_goal_state(state):
+            return path
+
+        # add node.STATE to explored
+        if state not in explored:
+            explored.add(state)
+
+            # for each action in problem.ACTIONS(node.STATE) do
+            for successor, action, step_cost in problem.get_successors(state):
+                # child ← CHILD-NODE(problem, node, action)
+                child_state = successor
+                child_path = path + [action]
+                child_g = g_cost + step_cost
+                child_node = (child_state, child_path, child_g)
+
+                # if child.STATE is not in explored or frontier then
+                #     frontier ← INSERT(child, frontier)
+                # else if child.STATE is in frontier with higher (PATH-COST + h(STATE)) then
+                #     replace that frontier node with child
+                #
+                # util.PriorityQueue.update handles both cases
+                if child_state not in explored:
+                    f_cost = child_g + heuristic(child_state, problem)
+                    frontier.update(child_node, f_cost)
+
+    # if EMPTY?(frontier) then return failure  [loop ended with empty frontier]
+    return []
 
 
 # (you can ignore this, although it might be helpful to know about)

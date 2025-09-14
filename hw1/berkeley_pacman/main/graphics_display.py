@@ -205,12 +205,26 @@ class PacmanGraphics(object):
         # Information
         self.previous_state = state
 
+    def start_graphics_og(self, state):
+        self.layout = state.layout
+        layout = self.layout
+        self.width = layout.width
+        self.height = layout.height
+        self.make_window(self.width, self.height)
+        self.info_pane = InfoPane(layout, self.grid_size)
+        self.current_state = layout
+
     def start_graphics(self, state):
         self.layout = state.layout
         layout = self.layout
         self.width = layout.width
         self.height = layout.height
         self.make_window(self.width, self.height)
+
+        # ADD THIS:
+        from graphics_utils import refresh
+        refresh()
+
         self.info_pane = InfoPane(layout, self.grid_size)
         self.current_state = layout
 
